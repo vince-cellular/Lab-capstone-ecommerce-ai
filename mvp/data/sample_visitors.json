@@ -1,0 +1,43 @@
+[
+  {
+    "visitor_id": "visitor_001",
+    "identified": false,
+    "consent_marketing": false,
+    "returning_visitor": false,
+    "pages_viewed": 7,
+    "product_views": 3,
+    "time_on_product_seconds": 210,
+    "added_to_cart": false,
+    "checkout_started": false,
+    "purchased": false,
+    "product_questions": 2
+  },
+  {
+    "visitor_id": "visitor_002",
+    "identified": true,
+    "consent_marketing": true,
+    "returning_visitor": true,
+    "pages_viewed": 9,
+    "product_views": 4,
+    "time_on_product_seconds": 280,
+    "added_to_cart": true,
+    "checkout_started": true,
+    "purchased": false,
+    "product_questions": 0,
+    "email": "demo@example.com"
+  },
+  {
+    "visitor_id": "visitor_003",
+    "identified": true,
+    "consent_marketing": false,
+    "returning_visitor": true,
+    "pages_viewed": 5,
+    "product_views": 2,
+    "time_on_product_seconds": 90,
+    "added_to_cart": false,
+    "checkout_started": false,
+    "purchased": false,
+    "product_questions": 3,
+    "email": "demo2@example.com"
+  }
+]
