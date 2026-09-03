@@ -657,3 +657,51 @@ Approved action
 ```
 
 The next stage is not to expand the POC indefinitely, but to validate its business value during a controlled pilot using real customer-journey baselines, measurable conversion outcomes and production-grade privacy, security and monitoring controls.
+
+## 8. AI Evaluation
+
+### Evaluation Dataset
+
+An evaluation dataset named `Ecommerce-AI-Visitor-Decision-Evaluation-v2` was created in LangSmith with 8 representative e-commerce visitor scenarios.
+
+The dataset uses the same input schema as the production n8n POC:
+
+- visitor identification
+- marketing consent
+- returning visitor status
+- pages viewed
+- product views
+- time on product pages
+- cart activity
+- checkout activity
+- purchase status
+- product questions
+- email availability
+
+### Evaluation Dimensions
+
+The following LangSmith evaluators were configured:
+
+- Correctness
+- Answer Relevance
+- Hallucination
+- Bias & Fairness
+
+### Evaluation Observation
+
+The initial automated Playground experiment revealed an integration/mapping limitation: the evaluation target did not reproduce the production n8n decision prompt and therefore generated generic responses for some test cases.
+
+Consequently, the resulting evaluator scores were not considered representative of the production POC's AI performance and were not used as performance claims.
+
+The evaluation dataset and evaluator configuration remain available in LangSmith for future iteration.
+
+### Responsible AI Controls
+
+The production POC includes explicit safeguards in the AI system prompt:
+
+- Marketing email is not recommended when `consent_marketing` is false.
+- Cart recovery is not recommended when `purchased` is true.
+- The model is instructed not to invent products, prices, promotions, availability, or customer information.
+- Recovery risk must be based only on provided behavioral evidence.
+- Unknown information must be identified as unknown.
+- The model must return structured JSON for downstream automation.
