@@ -1,0 +1,468 @@
+{
+  "name": "E-commerce AI Cart Recovery POC",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -608
+      ],
+      "id": "3ef07555-2326-4e21-9238-2ca04113d78b",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"visitor_id\": \"visitor_003\",\n  \"identified\": true,\n  \"consent_marketing\": false,\n  \"returning_visitor\": true,\n  \"pages_viewed\": 8,\n  \"product_views\": 3,\n  \"time_on_product_seconds\": 240,\n  \"added_to_cart\": true,\n  \"checkout_started\": true,\n  \"purchased\": false,\n  \"product_questions\": 0,\n  \"email\": \"zotech58@gmail.com\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        192,
+        -608
+      ],
+      "id": "6825b9ee-18fc-4a14-befc-643cbd3e01b7",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=You are an AI e-commerce conversion and customer recovery advisor.\n\nAnalyze the provided customer session data.\n\nDetermine:\n1. recovery_risk: Low, Medium, or High\n2. main_signal: the strongest behavioral signal supported by the data\n3. recommended_action: the most appropriate next action\n4. customer_message: a short personalized message\n5. channel: the recommended channel, such as \"email\", \"on-site\", \"none\", or \"unknown\"\n\nRules:\n- Use ONLY the information provided in the customer data.\n- Do not assume or invent reasons for abandonment.\n- Do not invent discounts, promotions, product availability, product names, prices, or customer information.\n- Do not claim that an email or message has already been sent.\n- Do not claim that specific products can be summarized because no product details were provided.\n- If information is unavailable, state that it is unknown.\n- If consent_marketing is false, do NOT recommend marketing email or marketing messaging.\n- If consent_marketing is true, an email may be recommended when the available behavior supports a recovery opportunity.\n- If purchased is true, do NOT recommend cart recovery.\n- Base recovery risk on the behavioral evidence provided, not on assumptions.\n\nReturn ONLY valid JSON.\nDo not include markdown.\nDo not include explanations outside the JSON.\n\nUse exactly this structure:\n\n{\n  \"recovery_risk\": \"Low\",\n  \"main_signal\": \"\",\n  \"recommended_action\": \"\",\n  \"customer_message\": \"\",\n  \"channel\": \"\"\n}"
+            },
+            {
+              "content": "=Customer session data:\n\nVisitor ID: {{$json.visitor_id}}\nIdentified: {{$json.identified}}\nMarketing consent: {{$json.consent_marketing}}\nReturning visitor: {{$json.returning_visitor}}\nPages viewed: {{$json.pages_viewed}}\nProduct views: {{$json.product_views}}\nTime on product pages: {{$json.time_on_product_seconds}} seconds\nAdded to cart: {{$json.added_to_cart}}\nCheckout started: {{$json.checkout_started}}\nPurchased: {{$json.purchased}}\nProduct questions: {{$json.product_questions}}\nEmail available: {{$json.email}}\n\nAnalyze this customer session and provide the recovery assessment."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        416,
+        -192
+      ],
+      "id": "a0a5ca64-6d93-4e57-b132-ef17ca07af9d",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "HlVl0nJ3i2HVX63z",
+          "name": "Vince Open AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7a4405e6-9114-4133-a1f7-e0b64bb3edb6",
+              "leftValue": "={{ $json.channel }}",
+              "rightValue": "email",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "aee8e4fe-89fd-417a-9765-95061335011a",
+              "leftValue": "={{ $('Edit Fields1').item.json.consent_marketing }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "fea26aa0-7954-44a7-995d-7e195336b6a0",
+              "leftValue": "={{ $('Edit Fields1').item.json.purchased }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        992,
+        -192
+      ],
+      "id": "b223b1b2-29db-4485-8e45-dd9f41bf3125",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Edit Fields1').item.json.email }}",
+        "subject": "Complete your checkout",
+        "emailType": "text",
+        "message": "=={{ $json.customer_message }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1216,
+        -384
+      ],
+      "id": "962b3d90-0731-464d-bb19-20dfea844f33",
+      "name": "Send a message",
+      "webhookId": "fd3d231e-2b6a-49c1-9b72-aeb8aeb56cad",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "SceSV7CmU7qlIIlt",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $json.output[0].content[0].text;\n\nconst decision = JSON.parse(text);\n\nreturn [\n  {\n    json: {\n      ...$json,\n      recovery_risk: decision.recovery_risk,\n      main_signal: decision.main_signal,\n      recommended_action: decision.recommended_action,\n      customer_message: decision.customer_message,\n      channel: decision.channel\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        -192
+      ],
+      "id": "5375a3f9-434c-419e-bdab-5348dd3eb980",
+      "name": "Parse AI Decision"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5862dd78-f6ab-4af7-8bc9-34644f9f7021",
+              "leftValue": "={{ $json.channel }}",
+              "rightValue": "on-site",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1216,
+        -96
+      ],
+      "id": "d19b0d52-ee30-4fc9-9c37-db67d938ebae",
+      "name": "Needs On-Site Assistance?"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nova-visitor-event",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "http://localhost:5500"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -32,
+        -192
+      ],
+      "id": "6d2e537d-878a-4d48-bf64-651f3a2b48ec",
+      "name": "nova-visitor-event",
+      "webhookId": "1f81a2be-73c4-407d-b845-23d340b463d1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "67008cf5-cd75-43c8-8a06-acd33eeb884a",
+              "name": "=visitor_id",
+              "value": "={{ $json.body.visitor_id }}",
+              "type": "string"
+            },
+            {
+              "id": "e2ffae7c-0e1a-4e4d-9b97-d50c650b89b9",
+              "name": "identified",
+              "value": "={{ $json.body.identified }}",
+              "type": "boolean"
+            },
+            {
+              "id": "5ab1010a-d829-4448-b703-f4e7e9af23f6",
+              "name": "consent_marketing",
+              "value": "={{ $json.body.consent_marketing }}",
+              "type": "boolean"
+            },
+            {
+              "id": "f4d4df52-3375-4968-916f-9fef60ac0002",
+              "name": "returning_visitor",
+              "value": "={{ $json.body.returning_visitor }}",
+              "type": "boolean"
+            },
+            {
+              "id": "bdcc66cb-9935-4606-ac48-48ef7fa4fc3f",
+              "name": "pages_viewed",
+              "value": "={{ $json.body.pages_viewed }}",
+              "type": "number"
+            },
+            {
+              "id": "8a608db1-47a6-4ed3-aa07-2d8c3453db3b",
+              "name": "product_views",
+              "value": "={{ $json.body.product_views }}",
+              "type": "number"
+            },
+            {
+              "id": "9fc9e777-9a01-44fb-b351-4524a65bb4a7",
+              "name": "time_on_product_seconds",
+              "value": "={{ $json.body.time_on_product_seconds }}",
+              "type": "number"
+            },
+            {
+              "id": "97596794-e55d-4b8f-a522-dbeca332b251",
+              "name": "added_to_cart",
+              "value": "={{ $json.body.added_to_cart }}",
+              "type": "boolean"
+            },
+            {
+              "id": "d561b049-5688-4a23-8466-c3197c17cc5b",
+              "name": "checkout_started",
+              "value": "={{ $json.body.checkout_started }}",
+              "type": "boolean"
+            },
+            {
+              "id": "96b08c9a-a075-4df9-bf6c-9c853b0d3e72",
+              "name": "purchased",
+              "value": "={{ $json.body.purchased }}",
+              "type": "boolean"
+            },
+            {
+              "id": "a876f189-de96-43c0-ad30-2b30c0b4cbe1",
+              "name": "product_questions",
+              "value": "={{ $json.body.product_questions }}",
+              "type": "number"
+            },
+            {
+              "id": "43092d0f-783d-4994-974d-8b5247b52aa5",
+              "name": "email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        192,
+        -192
+      ],
+      "id": "78a0d046-0544-4c31-9ee6-6e9a2b469eec",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"recovery_risk\": \"{{ $json.recovery_risk }}\",\n  \"main_signal\": \"{{ $json.main_signal }}\",\n  \"recommended_action\": \"{{ $json.recommended_action }}\",\n  \"customer_message\": \"{{ $json.customer_message }}\",\n  \"channel\": \"{{ $json.channel }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1440,
+        -192
+      ],
+      "id": "dfc30a9e-2df0-456a-8ae5-fa3a3c05bf6e",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"recovery_risk\": \"{{ $json.recovery_risk }}\",\n  \"main_signal\": \"{{ $json.main_signal }}\",\n  \"recommended_action\": \"{{ $json.recommended_action }}\",\n  \"customer_message\": \"{{ $json.customer_message }}\",\n  \"channel\": \"{{ $json.channel }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1440,
+        0
+      ],
+      "id": "57f6b699-6eac-493a-be61-cb1965c36b68",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{\n  {\n    recovery_risk: $json.recovery_risk,\n    main_signal: $json.main_signal,\n    recommended_action: $json.recommended_action,\n    customer_message: $json.customer_message,\n    channel: $json.channel\n  }\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1440,
+        -384
+      ],
+      "id": "67a1a90a-8618-4b24-bb97-fda3653b2fce",
+      "name": "Respond to Webhook2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        []
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Needs On-Site Assistance?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Decision": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "nova-visitor-event": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs On-Site Assistance?": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "dae9b818-f113-4120-9593-19bd630bede1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00cafa1eb8a383ac595b6bbf54c5f8acd05d9d1462911bd4a0edac031509b829"
+  },
+  "id": "3STFg7aOQxqRDTRw",
+  "tags": []
+}
